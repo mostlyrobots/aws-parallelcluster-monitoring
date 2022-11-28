@@ -10,11 +10,15 @@
 . /etc/parallelcluster/cfnconfig
 
 export AWS_DEFAULT_REGION=$cfn_region
-aws_region_long_name=$(python /usr/local/bin/aws-region.py $cfn_region)
+aws_region_long_name=$(python3 /usr/local/bin/aws-region.py $cfn_region)
 aws_region_long_name=${aws_region_long_name/Europe/EU}
 
-masterInstanceType=$(ec2-metadata -t | awk '{print $2}')
-masterInstanceId=$(ec2-metadata -i | awk '{print $2}')
+function get_metadata {
+   curl http://169.254.169.254/latest/meta-data/$1
+}
+
+masterInstanceType=$(get_metadata instance-type)
+masterInstanceId=$(get_metadata instance-id)
 s3_bucket=$(echo $cfn_postinstall | sed "s/s3:\/\///g;s/\/.*//")
 s3_size_gb=$(echo "$(aws s3api list-objects --bucket $s3_bucket --output json --query "[sum(Contents[].Size)]"| sed -n 2p | tr -d ' ') / 1024 / 1024 / 1024" | bc)
 
